@@ -1,19 +1,20 @@
 import genanki
-import openai
+from openai import OpenAI
+
+client = OpenAI(api_key='your-api-key-here')
 import os
 
 # Set your OpenAI API key
-openai.api_key = 'your-api-key-here'
 
 # Function to create audio file using OpenAI's Text-to-Speech
 def generate_audio_openai(phrase, lang_code="el"):
     # Create a text-to-speech request to OpenAI (example request, replace with actual API call)
-    response = openai.Audio.create(text=phrase, voice="el", format="mp3")
-    
+    response = client.audio.create(text=phrase, voice="el", format="mp3")
+
     # Save the audio file
     audio_file = f"{phrase}.mp3".replace(" ", "_")
     with open(audio_file, 'wb') as f:
-        f.write(response['data'])  # Adjust as per the actual API response structure
+        f.write(response.data)  # Adjust as per the actual API response structure
     return audio_file
 
 # Function to create a note (flashcard) with the given front, back, and audio
@@ -68,7 +69,7 @@ for phrase in phrases:
     front_text = phrase["English"]
     back_text = phrase["Greek"]
     audio_file = generate_audio_openai(phrase["Greek"])
-    
+
     # Create a note and add it to the deck
     note = create_note(model, front_text, back_text, audio_file)
     deck.add_note(note)
