@@ -25,6 +25,19 @@ def create_note(model, front, back, audio_file):
     )
     return note
 
+# Function to read phrases from phrases.txt
+def read_phrases_from_file(file_path):
+    phrases = []
+    with open(file_path, 'r', encoding='utf-8') as file:
+        for line in file:
+            parts = line.strip().split('\t')
+            if len(parts) >= 2:  # Ensure there are at least English and Greek phrases
+                english = parts[0].strip()
+                greek = parts[1].strip()
+                # Transliteration (parts[2]) is ignored
+                phrases.append({"English": english, "Greek": greek})
+    return phrases
+
 # Create a model for the flashcards (this defines how the cards will look)
 model = genanki.Model(
     1607392319,
@@ -37,8 +50,8 @@ model = genanki.Model(
     templates=[
         {
             'name': 'Card 1',
-            'qfmt': '{{Front}}<br>{{Audio}}',  # Front of the card
-            'afmt': '{{Front}}<br><hr id="answer">{{Back}}<br>{{Audio}}',  # Back of the card
+            'qfmt': '{{Front}}',  # Audio removed from the front of the card
+            'afmt': '{{Front}}<br><hr id="answer">{{Back}}<br>{{Audio}}',  # Audio added to the back of the card
         },
     ]
 )
@@ -49,19 +62,9 @@ deck = genanki.Deck(
     'Greek for Tourists'
 )
 
-# Greek phrases to include in the deck (Feel free to add/remove phrases)
-phrases = [
-    {"English": "Hello", "Greek": "Γειά σας"},
-    {"English": "Goodbye", "Greek": "Αντίο"},
-    {"English": "Please", "Greek": "Παρακαλώ"},
-    {"English": "Thank you", "Greek": "Ευχαριστώ"},
-    {"English": "Yes", "Greek": "Ναί"},
-    {"English": "No", "Greek": "Όχι"},
-    {"English": "How much?", "Greek": "Πόσο κοστίζει;"},
-    {"English": "Where is the bathroom?", "Greek": "Πού είναι η τουαλέτα;"},
-    {"English": "Do you speak English?", "Greek": "Μιλάτε Αγγλικά;"},
-    {"English": "I don’t understand", "Greek": "Δεν καταλαβαίνω"},
-]
+# Read phrases from the phrases.txt file
+phrases_file = 'phrases.txt'
+phrases = read_phrases_from_file(phrases_file)
 
 # Add notes to the deck
 for phrase in phrases:
@@ -74,7 +77,7 @@ for phrase in phrases:
     deck.add_note(note)
 
 # Save the deck to a .apkg file in the dist directory
-apkg_file = os.path.join(output_dir, 'greek_for_tourists.apkg')
+apkg_file = os.path.join(output_dir, 'greek_1000_words.apkg')
 package = genanki.Package(deck)
 package.media_files = [os.path.join(output_dir, f"{phrase['Greek'].replace(' ', '_')}.mp3") for phrase in phrases]
 package.write_to_file(apkg_file)
