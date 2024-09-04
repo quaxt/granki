@@ -2,19 +2,23 @@ from gtts import gTTS
 import genanki
 import os
 
+# Create the dist directory if it doesn't exist
+output_dir = "dist"
+os.makedirs(output_dir, exist_ok=True)
+
 # Function to create audio file using Google Text-to-Speech
 def generate_audio_gtts(phrase, lang_code="el"):
     # Use gTTS to generate the speech
     tts = gTTS(text=phrase, lang=lang_code, slow=False)
 
-    # Save the audio file
-    audio_file = f"{phrase}.mp3".replace(" ", "_")
+    # Save the audio file in the dist directory
+    audio_file = os.path.join(output_dir, f"{phrase}.mp3".replace(" ", "_"))
     tts.save(audio_file)
     return audio_file
 
 # Function to create a note (flashcard) with the given front, back, and audio
 def create_note(model, front, back, audio_file):
-    audio_tag = f"[sound:{audio_file}]"
+    audio_tag = f"[sound:{os.path.basename(audio_file)}]"  # Use only the filename for the audio tag
     note = genanki.Note(
         model=model,
         fields=[front, back, audio_tag],
@@ -69,9 +73,10 @@ for phrase in phrases:
     note = create_note(model, front_text, back_text, audio_file)
     deck.add_note(note)
 
-# Save the deck to a .apkg file
+# Save the deck to a .apkg file in the dist directory
+apkg_file = os.path.join(output_dir, 'greek_for_tourists.apkg')
 package = genanki.Package(deck)
-package.media_files = [f"{phrase['Greek'].replace(' ', '_')}.mp3" for phrase in phrases]
-package.write_to_file('greek_for_tourists.apkg')
+package.media_files = [os.path.join(output_dir, f"{phrase['Greek'].replace(' ', '_')}.mp3") for phrase in phrases]
+package.write_to_file(apkg_file)
 
-print("Anki deck 'greek_for_tourists.apkg' created with audio successfully!")
+print(f"Anki deck '{apkg_file}' created with audio successfully!")
