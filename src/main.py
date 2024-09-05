@@ -38,6 +38,38 @@ def read_phrases_from_file(file_path):
                 phrases.append({"English": english, "Greek": greek})
     return phrases
 
+# Function to read most common words from most_common.txt
+def read_most_common_words(file_path):
+    with open(file_path, 'r', encoding='utf-8') as file:
+        # Read and strip whitespace from each line, convert to lowercase for case-insensitive comparison
+        return [line.strip().lower() for line in file]
+
+# Function to sort phrases based on the most common words list
+def sort_phrases(phrases, most_common_words):
+    # Separate matched and unmatched phrases
+    matched = []
+    unmatched = []
+
+    # Create a lookup for common words for fast comparison
+    common_word_set = set(most_common_words)
+
+    # Map to keep matched phrases according to their position in the most_common list
+    common_phrases = {word: [] for word in most_common_words}
+
+    # Populate matched and unmatched lists
+    for phrase in phrases:
+        english_lower = phrase["English"].lower()
+        if english_lower in common_word_set:
+            common_phrases[english_lower].append(phrase)
+        else:
+            unmatched.append(phrase)
+
+    # Combine phrases: matched ones first (in the order they appear in most_common.txt), then unmatched
+    for word in most_common_words:
+        matched.extend(common_phrases[word])
+
+    return matched + unmatched
+
 # Create a model for the flashcards (this defines how the cards will look)
 model = genanki.Model(
     1607392319,
@@ -50,8 +82,8 @@ model = genanki.Model(
     templates=[
         {
             'name': 'Card 1',
-            'qfmt': '{{Front}}',  # Audio removed from the front of the card
-            'afmt': '{{Front}}<br><hr id="answer">{{Back}}<br>{{Audio}}',  # Audio added to the back of the card
+            'qfmt': '{{Front}}<br>{{Audio}}',
+            'afmt': '{{Front}}<br><hr id="answer">{{Back}}',
         },
     ]
 )
@@ -59,17 +91,23 @@ model = genanki.Model(
 # Create a deck
 deck = genanki.Deck(
     2059400110,
-    'Greek for Tourists'
+    'Common Greek words'
 )
 
-# Read phrases from the phrases.txt file
+# Read phrases and most common words from the files
 phrases_file = 'phrases.txt'
+most_common_file = 'most_common.txt'
+
 phrases = read_phrases_from_file(phrases_file)
+most_common_words = read_most_common_words(most_common_file)
+
+# Sort the phrases based on their occurrence in most_common.txt
+sorted_phrases = sort_phrases(phrases, most_common_words)
 
 # Add notes to the deck
-for phrase in phrases:
-    front_text = phrase["English"]
-    back_text = phrase["Greek"]
+for phrase in sorted_phrases:
+    front_text = phrase["Greek"]
+    back_text = phrase["English"]
     audio_file = generate_audio_gtts(phrase["Greek"])  # Use gTTS to generate audio
 
     # Create a note and add it to the deck
@@ -77,9 +115,9 @@ for phrase in phrases:
     deck.add_note(note)
 
 # Save the deck to a .apkg file in the dist directory
-apkg_file = os.path.join(output_dir, 'greek_1000_words.apkg')
+apkg_file = os.path.join(output_dir, 'common_greek_words.apkg')
 package = genanki.Package(deck)
-package.media_files = [os.path.join(output_dir, f"{phrase['Greek'].replace(' ', '_')}.mp3") for phrase in phrases]
+package.media_files = [os.path.join(output_dir, f"{phrase['Greek'].replace(' ', '_')}.mp3") for phrase in sorted_phrases]
 package.write_to_file(apkg_file)
 
 print(f"Anki deck '{apkg_file}' created with audio successfully!")
